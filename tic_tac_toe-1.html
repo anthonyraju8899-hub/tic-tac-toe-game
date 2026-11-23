@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe — Neon Grid</title>
+<style>
+:root{--bg:#090d18;--panel:#111a2c;--panel2:#18243a;--text:#edf4ff;--muted:#91a2bd;--cyan:#48e5ff;--pink:#ff64c8;--lime:#a8ff70;--line:#263650}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#172845 0%,var(--bg) 65%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial;display:grid;place-items:center;padding:24px}
+.app{width:min(100%,460px)}.top{text-align:center;margin-bottom:24px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}.top h1{font-size:clamp(30px,7vw,46px);letter-spacing:1px;margin:8px 0 4px}.top h1 span{color:var(--cyan);text-shadow:0 0 22px #48e5ff55}.top p{color:var(--muted);margin:0;font-size:14px}
+.panel{background:linear-gradient(160deg,#121d31dd,#0e1626ee);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 20px 60px #0006,inset 0 1px #ffffff0a;backdrop-filter:blur(12px)}
+.mode-row{display:flex;gap:8px;margin-bottom:18px}.mode{flex:1;border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:12px;padding:11px 8px;font-weight:700;font-size:13px;cursor:pointer;transition:.2s}.mode.active{border-color:#48e5ff77;color:var(--cyan);background:#48e5ff12;box-shadow:0 0 16px #48e5ff12}.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}.score{background:#0b1323;border:1px solid var(--line);border-radius:13px;padding:12px 5px;text-align:center}.score .label{font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:800}.score .num{font-size:26px;font-weight:800;margin-top:4px}.score.x .num{color:var(--cyan)}.score.o .num{color:var(--pink)}.score.draw .num{color:#dbe6ff}
+.status{display:flex;align-items:center;justify-content:center;gap:9px;min-height:45px;color:#dbe8ff;font-weight:700;margin-bottom:13px}.dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;aspect-ratio:1}.cell{background:linear-gradient(145deg,#17243a,#101a2b);border:1px solid #2a3c58;border-radius:17px;display:grid;place-items:center;font-size:clamp(44px,14vw,70px);font-weight:900;cursor:pointer;transition:transform .16s,border-color .2s,background .2s;user-select:none;min-width:0}.cell:hover:empty{transform:translateY(-2px);border-color:#48e5ff88;background:#1a2c45}.cell.x{color:var(--cyan);text-shadow:0 0 22px #48e5ff66}.cell.o{color:var(--pink);text-shadow:0 0 22px #ff64c866}.cell.win{border-color:var(--lime);box-shadow:0 0 18px #a8ff7040;background:#a8ff7010;animation:pulse .75s infinite alternate}.cell:disabled{cursor:default}.actions{display:flex;gap:10px;margin-top:17px}.btn{flex:1;border:1px solid var(--line);border-radius:12px;background:#17243a;color:var(--text);padding:12px;font-weight:800;cursor:pointer;transition:.2s}.btn:hover{border-color:#48e5ff88;transform:translateY(-1px)}.btn.primary{background:linear-gradient(110deg,#37cde9,#4b9bff);border:none;color:#07101e}.foot{text-align:center;color:#6f819d;font-size:11px;margin-top:18px;letter-spacing:.5px}
+@keyframes pop{from{transform:scale(.65);opacity:.2}to{transform:scale(1);opacity:1}}@keyframes pulse{to{box-shadow:0 0 28px #a8ff7060}}.cell.filled{animation:pop .18s ease-out}
+@media(max-width:390px){body{padding:14px}.panel{padding:14px}.cell{border-radius:13px;gap:7px}.mode{font-size:12px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top"><div class="eyebrow">◆ Mini game · 01</div><h1>TIC <span>TAC</span> TOE</h1><p>Three in a row. Make your move.</p></header>
+  <section class="panel" aria-label="Tic tac toe game">
+    <div class="mode-row"><button class="mode active" id="twoPlayer">👥 Two players</button><button class="mode" id="vsAI">🤖 Vs computer</button></div>
+    <div class="scores"><div class="score x"><div class="label">PLAYER X</div><div class="num" id="scoreX">0</div></div><div class="score draw"><div class="label">DRAWS</div><div class="num" id="scoreD">0</div></div><div class="score o"><div class="label" id="oLabel">PLAYER O</div><div class="num" id="scoreO">0</div></div></div>
+    <div class="status" id="status"><span class="dot"></span><span>Player X's turn</span></div>
+    <div class="board" id="board" role="grid" aria-label="Game board"></div>
+    <div class="actions"><button class="btn primary" id="restart">↻ New round</button><button class="btn" id="reset">Reset scores</button></div>
+  </section><footer class="foot">BUILT FOR FUN · TAKE YOUR TURN</footer>
+</main>
+<script>
+(() => {
+  const boardEl = document.querySelector('#board'), statusEl = document.querySelector('#status');
+  const scoreEls = {X:document.querySelector('#scoreX'), O:document.querySelector('#scoreO'), D:document.querySelector('#scoreD')};
+  const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  let board=Array(9).fill(''),turn='X',over=false,mode='two',scores={X:0,O:0,D:0},winLine=[];
+  function sound(freq=520,duration=.07){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=freq;o.type='sine';g.gain.setValueAtTime(.045,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+duration);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+duration)}catch(e){}}
+  function winner(b=board){for(const p of wins)if(b[p[0]]&&b[p[0]]===b[p[1]]&&b[p[1]]===b[p[2]])return {mark:b[p[0]],line:p};return null}
+  function render(){boardEl.innerHTML='';board.forEach((mark,i)=>{const b=document.createElement('button');b.className='cell'+(mark?' filled '+mark.toLowerCase():'')+(winLine.includes(i)?' win':'');b.setAttribute('role','gridcell');b.setAttribute('aria-label',`Cell ${i+1}${mark?': '+mark:' empty'}`);b.textContent=mark;b.disabled=over||!!mark||(mode==='ai'&&turn==='O');b.addEventListener('click',()=>move(i));boardEl.appendChild(b)});scoreEls.X.textContent=scores.X;scoreEls.O.textContent=scores.O;scoreEls.D.textContent=scores.D;}
+  function setStatus(message){statusEl.innerHTML='<span class="dot"></span><span>'+message+'</span>';}
+  function move(i){if(over||board[i])return;board[i]=turn;sound(turn==='X'?620:440);const w=winner();if(w){over=true;winLine=w.line;scores[w.mark]++;setStatus(mode==='ai'&&w.mark==='O'?'Computer wins this round!':`Player ${w.mark} wins!`);sound(780,.18);render();return}if(board.every(Boolean)){over=true;scores.D++;setStatus("It's a draw — good game!");render();return}turn=turn==='X'?'O':'X';setStatus(mode==='ai'&&turn==='O'?'Computer is thinking…':`Player ${turn}'s turn`);render();if(mode==='ai'&&turn==='O')setTimeout(aiMove,380)}
+  // Minimax makes the computer play optimally.
+  function bestMove(){let best=-Infinity,choice=4;for(let i=0;i<9;i++)if(!board[i]){board[i]='O';let v=minimax(board,0,false);board[i]='';if(v>best){best=v;choice=i}}return choice}
+  function minimax(b,depth,max){const w=winner(b);if(w)return w.mark==='O'?10-depth:depth-10;if(b.every(Boolean))return 0;if(max){let v=-Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]='O';v=Math.max(v,minimax(b,depth+1,false));b[i]=''}return v}else{let v=Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]='X';v=Math.min(v,minimax(b,depth+1,true));b[i]=''}return v}}
+  function aiMove(){if(!over&&mode==='ai'&&turn==='O')move(bestMove())}
+  function newRound(){board=Array(9).fill('');turn='X';over=false;winLine=[];setStatus("Player X's turn");render()}
+  function setMode(m){mode=m;document.querySelector('#twoPlayer').classList.toggle('active',m==='two');document.querySelector('#vsAI').classList.toggle('active',m==='ai');document.querySelector('#oLabel').textContent=m==='ai'?'COMPUTER':'PLAYER O';newRound()}
+  document.querySelector('#twoPlayer').onclick=()=>setMode('two');document.querySelector('#vsAI').onclick=()=>setMode('ai');document.querySelector('#restart').onclick=newRound;document.querySelector('#reset').onclick=()=>{scores={X:0,O:0,D:0};newRound()};render();
+})();
+</script>
+</body>
+</html>
